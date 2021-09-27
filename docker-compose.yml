@@ -3,19 +3,41 @@ version: "3.9"
 services: 
     db:
         image: postgres:13
+        ports:
+          - "5432:5432"     # 호스트의 5432 포트와 db의 5432 포트를 바인딩
+        restart: always     # 컨테이너가 종료되면 항상 재시작
+        environment:        # 환경변수 설정
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=postgres
+          - POSTGRES_DB=postgres
+        volumes:  # 볼륨 할당
+           - pgdata:/var/lib/postgresql/data
 
-    
     pgadmin:
         image: dpage/pgadmin4
         logging:
             driver: none
         ports:
-            - "5050:80"
+          - "5050:80"       # 호스트의 5050 포트와 pgadmin의 80 포트를 바인딩
+        restart: always     # 컨테이너가 종료되면 항상 재시작
+        environment:        # 환경 변수 설정
+          - PGADMIN_DEFAULT_EMAIL=admin@example.com
+          - PGADMIN_DEFAULT_PASSWORD=admin
+        volumes:    # 볼륨 할당
+          - pgadmindata:/var/lib/pgadmin
 
     web:
         command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
         volumes: 
           - .:/code
+        build:              # 현재 디렉터리에 있는 Dockerfile을 빌드하여 이미지로 사용
+          context: .
+          dockerfile: Dockerfile
+        ports:
+          - "8000:8000"     # 호스트의 8000 포트와 web의 8000 포트를 바인딩
+        depends_on:         # db 서비스가 시작된 이후에 시작
+          - db
+        restart: always     # 컨테이너가 종료되면 항상 재시작
 
 volumes: 
   pgdata:
